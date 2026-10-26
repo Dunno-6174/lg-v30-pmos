@@ -1,0 +1,50 @@
+# Mainline Linux for LG V30 (joan), based on the msm8998-mainline fork
+pkgname=linux-lg-joan-mainline
+_flavor="lg-joan-mainline"
+pkgver=6.0
+pkgrel=1
+pkgdesc="Mainline Linux for LG V30 (joan)"
+arch="aarch64"
+_carch="arm64"
+_commit="90169e6e9fee29fae14aeac0a905246be5ce6304"
+_config="config-$_flavor.$arch"
+url="https://gitlab.com/msm8998-mainline/linux"
+license="GPL-2.0-only"
+options="!strip !check !tracedeps pmb:cross-native"
+makedepends="bash bison findutils flex linux-headers openssl-dev perl postmarketos-installkernel xz"
+source="
+	https://gitlab.com/msm8998-mainline/linux/-/archive/$_commit/linux-$_commit.tar.gz
+	$_config
+	msm8998-lge-joan.dtb
+"
+builddir="$srcdir/linux-$_commit"
+
+prepare() {
+	default_prepare
+	cp "$srcdir/$_config" .config
+}
+
+build() {
+	unset LDFLAGS
+	make ARCH="$_carch" CC="${CC:-gcc}" KBUILD_BUILD_VERSION="$((pkgrel + 1))-$_flavor" \
+		Image.gz modules
+}
+
+package() {
+	mkdir -p "$pkgdir/boot/dtbs/qcom"
+	install -Dm644 "$builddir/arch/arm64/boot/Image.gz" "$pkgdir/boot/vmlinuz"
+	install -Dm644 "$srcdir/msm8998-lge-joan.dtb" \
+		"$pkgdir/boot/dtbs/qcom/msm8998-lge-joan.dtb"
+	make modules_install ARCH="$_carch" INSTALL_MOD_PATH="$pkgdir" INSTALL_MOD_STRIP=1
+	rm -f "$pkgdir"/lib/modules/*/build "$pkgdir"/lib/modules/*/source
+	# Android boot image expects Image.gz with the DTB appended
+	cat "$pkgdir/boot/dtbs/qcom/msm8998-lge-joan.dtb" >> "$pkgdir/boot/vmlinuz"
+	install -D "$builddir"/include/config/kernel.release \
+		"$pkgdir/usr/share/kernel/$_flavor/kernel.release"
+}
+
+sha512sums="
+6ede9e9899f8062eb035d93f63c931f99e48d33e8be54b9fb223eb52c0d6faa5a348efe9045f4e8f0353b6d8b7a8cfc8a53986f6002c1722e236d5f38e72195e  linux-$_commit.tar.gz
+263cf95a2127c980e5514cabf8f6aaa07e48c40362b1ea2bb9edf8bf3cc26268e464a4c1c74d6319976b25b2b16ade0f46264fd3c4f752a13e7df30c61b86a09  $_config
+79519b2a32e6e013923329714f5476399b90a594778d104bf96f9ef23c482a2d091f4c22f8f222f0e210f1adf76dffadec01f67d345ebab274099b2af39f08c6  msm8998-lge-joan.dtb
+"

@@ -1,0 +1,10 @@
+--- a/drivers/bluetooth/hci_uart.h
++++ b/drivers/bluetooth/hci_uart.h
+@@ -80,6 +80,7 @@
+ 
+ 	struct work_struct	init_ready;
+ 	struct work_struct	write_work;
++	spinlock_t		rx_lock;
+ 
+ 	const struct hci_uart_proto *proto;
+ 	struct mutex		proto_lock;

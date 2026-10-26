@@ -1,0 +1,21 @@
+diff -Nur a/drivers/soc/qcom/icnss.c b/drivers/soc/qcom/icnss.c
+--- a/drivers/soc/qcom/icnss.c
++++ b/drivers/soc/qcom/icnss.c
+@@ -5055,4 +5055,4 @@
+ module_exit(icnss_exit);
+ 
+ MODULE_LICENSE("GPL v2");
+-MODULE_DESCRIPTION(DEVICE "iCNSS CORE platform driver");
++MODULE_DESCRIPTION("iCNSS CORE platform driver");
+diff -Nur a/drivers/staging/qcacld-3.0/configs/default_defconfig b/drivers/staging/qcacld-3.0/configs/default_defconfig
+--- a/drivers/staging/qcacld-3.0/configs/default_defconfig
++++ b/drivers/staging/qcacld-3.0/configs/default_defconfig
+@@ -144,7 +144,7 @@
+ #Flag to enable FILS Feature (11ai)
+ CONFIG_WLAN_FEATURE_FILS := y
+ ifneq ($(CONFIG_QCA_CLD_WLAN),)
+-	ifeq (y,$(findstring y,$(CONFIG_CNSS) $(CONFIG_CNSS2) $(CONFIG_ICNSS)))
++	ifneq (, $(filter y m,$(CONFIG_CNSS) $(CONFIG_CNSS2) $(CONFIG_ICNSS)))
+ 	#Flag to enable Protected Management Frames (11w) feature
+ 	CONFIG_WLAN_FEATURE_11W := y
+ 	#Flag to enable LTE CoEx feature

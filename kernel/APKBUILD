@@ -1,0 +1,104 @@
+# Reference: <https://postmarketos.org/vendorkernel>
+# Kernel config based on: arch/arm64/configs/lineageos_joan_defconfig
+
+maintainer="rock <rock@localhost.localdomain>"
+pkgname=linux-lg-joan
+pkgver=4.4.302
+pkgrel=28
+pkgdesc="LG V30 (joan) kernel fork"
+arch="aarch64"
+_carch="arm64"
+_flavor="lg-joan"
+_config="config-lg-joan.aarch64"
+url="https://kernel.org"
+license="GPL-2.0-only"
+options="!strip !check !tracedeps pmb:cross-native"
+makedepends="
+	bash
+	bc
+	devicepkg-dev
+	elfutils-dev
+	flex
+	gcc6
+	gmp-dev
+	installkernel
+	kmod
+	linux-headers
+	openssl-dev
+	perl
+	sed
+"
+
+# Compiler: GCC 6. The LG msm8998 4.4 kernel is known to build and boot with
+# GCC 6; newer GCC versions tend to break the Android kernel fork.
+if [ "${CC:0:5}" != "gcc6-" ]; then
+	CC="gcc6-$CC"
+	HOSTCC="gcc6-gcc"
+	CROSS_COMPILE="gcc6-$CROSS_COMPILE"
+fi
+
+# Source
+_repository="android_kernel_lge_msm8998"
+_commit="88b7c55fc5ffb3b2afec02bf21f3c9c6082b1236"
+source="
+	$pkgname-$_commit.tar.gz::https://github.com/LineageOS/$_repository/archive/$_commit.tar.gz
+	$_config
+	0001-dummycon-fix-build-with-CONFIG_VT.patch
+	0002-bluetooth-add-rx_lock-to-hci_uart.patch
+	0003-configfs-build-without-uevent.patch
+	0004-fbdev-panic-log-to-screen.patch
+	0005-cfg80211-add-ieee80211-band-aliases.patch
+	0006-modem-boot-helper.patch
+	0007-wifi-module-build-fixes.patch
+	0008-icnss-wlfw-probe-retry.patch
+"
+builddir="$srcdir/$_repository-$_commit"
+_outdir="out"
+
+prepare() {
+	default_prepare
+	. downstreamkernel_prepare
+
+	# Lay the config out like the LG/LineageOS build does. Running the
+	# config through "make <name>_defconfig" instead of only "oldconfig"
+	# is important: Kconfig's tristate choice for the USB gadget driver
+	# otherwise resolves to CONFIG_USB_CONFIGFS=m, which breaks the
+	# vmlinux link because LG's built-in f_laf driver needs libcomposite.
+	cp "$srcdir/$_config" \
+		"$builddir/arch/$_carch/configs/pmos_lg_joan_defconfig"
+	make -C "$builddir" O="$_outdir" ARCH="$_carch" \
+		pmos_lg_joan_defconfig
+}
+
+build() {
+	unset LDFLAGS
+	# The LG kernel appends its DTB to the kernel image, so build Image.gz-dtb
+	# explicitly (a plain "make" would only build the DTB-less Image.gz).
+	make O="$_outdir" ARCH="$_carch" CC="${CC:-gcc}" Image.gz-dtb modules \
+		KBUILD_BUILD_VERSION="$((pkgrel + 1 ))"-postmarketOS
+}
+
+package() {
+	KERNEL_IMAGE_NAME="Image.gz-dtb" \
+		downstreamkernel_package "$builddir" "$pkgdir" "$_carch" "$_flavor" "$_outdir"
+
+	make O="$_outdir" ARCH="$_carch" CC="${CC:-gcc}" \
+		INSTALL_MOD_PATH="$pkgdir/usr" INSTALL_MOD_STRIP=1 modules_install
+	local _rel
+	_rel="$(cat "$builddir/$_outdir/include/config/kernel.release")"
+	depmod -b "$pkgdir/usr" "$_rel" 2>/dev/null || true
+
+}
+
+sha512sums="
+2dcce50d1cb9ae9189f136e0014795a5da10c3d6e83f3603a1e85b5569cee7accd5bf6920099a30cd15af69491c4cc6e3ce365830d66fabecc0f16c61146f5ab  linux-lg-joan-88b7c55fc5ffb3b2afec02bf21f3c9c6082b1236.tar.gz
+67dbea5e3e21b37164c6be37e32f0ef566ad98dfe9477efd49b156ac4d972e31ee26563b8d9a13ef9c9cd8065bfedcf5be6f8e0bfc97aaa5c0602dfa5cd93da0  config-lg-joan.aarch64
+fb860a862faab97b28edaa5621b2a2918d535745598fe66faa25fe22559b835407115a4c9f1e96963b7bd2157a0c87ae1463cd9db4cea97093b90294e8f5200f  0001-dummycon-fix-build-with-CONFIG_VT.patch
+e3a5f261d1bc99c347fbcb735b28463f09f4328f8425f60d4b2b687eb1d584dfc5a86896611e1c217f81fac1eeb98946554fd579559e976c838b7500e5022134  0002-bluetooth-add-rx_lock-to-hci_uart.patch
+ecef353321d24af434cfd654877ed47bf687abfe635410eae4ac53ec552e3483f6651cb9768a7765a23741650d8eb84e0b68fe77a33e2855840764106461262f  0003-configfs-build-without-uevent.patch
+440b3567d0c85126cebd01dc209b4693709c13aec3002181ee1b4f17175c9b697ad93ee8717dc14646970e88ba5bce08dfac52ed0f5ec2b95b75145247c4bb9f  0004-fbdev-panic-log-to-screen.patch
+5fd61738dae014a81d4e1fc0f3ca65b47e4782e2e6d3cf52a1d9038724a0037421e2ec537e1026e5cd81807ec5c66a1b4e462a9c45334584890517cebec1fe15  0005-cfg80211-add-ieee80211-band-aliases.patch
+52b345c49d6480aa4be751978f7fc6d2b0a1a8d2f7e9c015d82a6419f18bd0bb8817a45cc222427937924275d7e713e0b99d753b5814294a840ac2f788de9466  0006-modem-boot-helper.patch
+16b5a601286c3743dee6357c365d0052ff54e97a67b4e5ced197a3b4eaeb8dec5560b78e49f14ed5be8c4564c138d9db765c422f96c0ebbfda02f49d070bce4b  0007-wifi-module-build-fixes.patch
+226efca0a214f71ad9ce5e818161477942537e56bc258fd3592d41b8026fddef89ba0f3ac5be7389a309c4586bc4929dc2b6ca364400ba5af2c09c383306042c  0008-icnss-wlfw-probe-retry.patch
+"

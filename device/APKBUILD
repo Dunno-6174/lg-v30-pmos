@@ -1,0 +1,31 @@
+# Reference: <https://postmarketos.org/devicepkg>
+maintainer="rock <rock@localhost.localdomain>"
+pkgname=device-lg-joan
+pkgdesc="LG V30"
+pkgver=0.1
+pkgrel=1
+url="https://postmarketos.org"
+license="MIT"
+arch="aarch64"
+options="!check !archcheck"
+depends="
+	linux-lg-joan
+	mkbootimg
+	msm-fb-refresher
+	postmarketos-base
+"
+makedepends="devicepkg-dev"
+source="deviceinfo kernel-cmdline.conf"
+
+build() {
+	devicepkg_build $startdir $pkgname
+}
+
+package() {
+	devicepkg_package $startdir $pkgname
+}
+
+sha512sums="
+7b102945375983e313b6cbe47cca014f35cbfa544c4ebd38e83e5f643df8048bd893ad7443bd2fea01af83c2194cf73a9a53b997f35b19588295d308d7a6728b  deviceinfo
+da25051cc04ff6c6c53cd04f6c191a4a2ed4875bf84f98a96149e5692bed9a6fb29a64cb388eb513120de080d4f8ac12c72f0537f0b6302db5a9d869f807ea38  kernel-cmdline.conf
+"

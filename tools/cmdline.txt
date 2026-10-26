@@ -1,0 +1,1 @@
+console=ttyMSM0,115200,n8 androidboot.hardware=joan pmos_root_uuid=6c972a82-7faa-4338-9d41-3e186b6d24e3 pmos_rootfsopts=defaults

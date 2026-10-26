@@ -1,0 +1,66 @@
+diff -Nur a/drivers/soc/qcom/icnss.c b/drivers/soc/qcom/icnss.c
+--- a/drivers/soc/qcom/icnss.c
++++ b/drivers/soc/qcom/icnss.c
+@@ -4638,6 +4638,54 @@
+ 	return 0;
+ }
+ 
++
++static void icnss_wlfw_probe_work_fn(struct work_struct *work);
++static DECLARE_DELAYED_WORK(icnss_wlfw_probe_work, icnss_wlfw_probe_work_fn);
++
++static void icnss_wlfw_probe_notify(struct qmi_handle *handle,
++				    enum qmi_event_type event, void *priv)
++{
++}
++
++static void icnss_wlfw_probe_work_fn(struct work_struct *work)
++{
++	struct qmi_handle *h;
++	static bool power_logged;
++	int ret;
++
++	if (!penv)
++		goto retry;
++
++	if (test_bit(ICNSS_WLFW_QMI_CONNECTED, &penv->state))
++		return;
++
++	ret = icnss_hw_power_on(penv);
++	if (!power_logged) {
++		icnss_pr_err("wlfw probe: hw power on ret=%d\n", ret);
++		power_logged = true;
++	}
++
++	h = qmi_handle_create(icnss_wlfw_probe_notify, NULL);
++	if (!h) {
++		icnss_pr_err("wlfw probe: handle create failed\n");
++		goto retry;
++	}
++	ret = qmi_connect_to_service(h, WLFW_SERVICE_ID_V01,
++				     WLFW_SERVICE_VERS_V01,
++				     WLFW_SERVICE_INS_ID_V01);
++	icnss_pr_err("wlfw probe: connect ret=%d\n", ret);
++	qmi_handle_destroy(h);
++
++	if (ret == 0) {
++		icnss_pr_err("wlfw probe: WLFW service FOUND\n");
++		icnss_driver_event_post(ICNSS_DRIVER_EVENT_SERVER_ARRIVE, 0, NULL);
++		return;
++	}
++
++retry:
++	schedule_delayed_work(&icnss_wlfw_probe_work, msecs_to_jiffies(5000));
++}
++
+ static int icnss_probe(struct platform_device *pdev)
+ {
+ 	int ret = 0;
+@@ -4833,6 +4881,7 @@
+ 			     ret);
+ 
+ 	penv = priv;
++	schedule_delayed_work(&icnss_wlfw_probe_work, msecs_to_jiffies(5000));
+ 
+ 	init_completion(&priv->unblock_shutdown);
+ 

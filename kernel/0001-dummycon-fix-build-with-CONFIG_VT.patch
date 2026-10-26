@@ -1,0 +1,33 @@
+From: postmarketOS porting <postmarketos@localhost>
+Subject: [PATCH] dummycon: fix build with CONFIG_VT enabled
+
+The LG msm8998 kernel never builds dummycon.c (it always ships with
+CONFIG_VT=n), so the driver rotted: it references an undefined "intf"
+parameter name and an undefined DUMMY macro. Use the real functions that
+are defined a few lines above instead, so the kernel can be built with
+CONFIG_VT=y which postmarketOS needs for the framebuffer console.
+---
+--- a/drivers/video/console/dummycon.c
++++ b/drivers/video/console/dummycon.c
+@@ -91,7 +91,7 @@
+     return 0;
+ }
+ 
+-static void con_bmove(struct vc_data *vc, int a, int b, int c, int d, int e, intf)
++static void con_bmove(struct vc_data *vc, int a, int b, int c, int d, int e, int f)
+ {
+ }
+ 
+@@ -115,9 +115,9 @@
+     .owner =		THIS_MODULE,
+     .con_startup =	dummycon_startup,
+     .con_init =		dummycon_init,
+-    .con_bmove =	DUMMY,
+-    .con_set_palette =	DUMMY,
+-    .con_scrolldelta =	DUMMY,
++    .con_bmove =	con_bmove,
++    .con_set_palette =	con_set_palette,
++    .con_scrolldelta =	con_scrolldelta,
+     .con_deinit =	dummycon_deinit,
+     .con_clear =	dummycon_clear,
+     .con_putc =		dummycon_putc,

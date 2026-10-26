@@ -1,0 +1,24 @@
+--- a/drivers/usb/gadget/configfs.c
++++ b/drivers/usb/gadget/configfs.c
+@@ -114,6 +114,13 @@
+ 	char qw_sign[OS_STRING_QW_SIGN_LEN];
+ 	spinlock_t spinlock;
+ 	bool unbind;
++#ifndef CONFIG_USB_CONFIGFS_UEVENT
++	struct work_struct work;
++	struct device *dev;
++	bool factory_lock;
++	bool connected;
++	bool sw_connected;
++#endif
+ #ifdef CONFIG_USB_CONFIGFS_UEVENT
+ 	bool connected;
+ 	bool sw_connected;
+@@ -2049,6 +2056,7 @@
+ 	device_destroy(dev->class, dev->devt);
+ }
+ #else
++static int gadget_index;
+ static inline int android_device_create(struct gadget_info *gi)
+ {
+ 	return 0;

@@ -17,6 +17,11 @@ attempt.
 | `mainline/` | mainline 6.0 kernel package, joan DTS, issue draft |
 | `docs/` | README of the device port + full debug history (`NOTES.md`) |
 
+## Links
+
+- Release (images): https://github.com/Dunno-6174/lg-v30-pmos/releases/tag/v1
+- Upstream mainline issue: https://github.com/msm8998-mainline/linux/issues/2
+
 ## Flashable images (release assets)
 
 - `boot.img` — downstream kernel r28 (BT + WiFi probe patches)

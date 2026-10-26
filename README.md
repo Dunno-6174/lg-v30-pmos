@@ -24,16 +24,41 @@ attempt.
 
 ## Flashable images (release assets)
 
-- `boot.img` — downstream kernel r28 (BT + WiFi probe patches)
-- `rootfs.img.gz` — pmOS root filesystem (flash to `userdata`)
+Release: https://github.com/Dunno-6174/lg-v30-pmos/releases/tag/v1
 
-```sh
-fastboot flash boot boot.img
-fastboot flash userdata rootfs.img     # gunzip first
-fastboot reboot
-```
+### 中文
 
-Default login: `user` / `147147`, SSH over USB net at `172.16.42.1`.
+1. 下载 `boot.img` 和 `rootfs.img.gz`
+2. 解压：`gunzip rootfs.img.gz`
+3. 手机关机，按住**音量下键**插 USB，进入 fastboot
+4. 刷入：
+
+   ```sh
+   fastboot flash boot boot.img
+   fastboot flash userdata rootfs.img
+   fastboot reboot
+   ```
+5. 首次启动自动扩容根分区
+6. 默认账号 `user` / `147147`，USB 网络 SSH：`ssh user@172.16.42.1`
+
+> ⚠️ 刷 `userdata` 会清空所有数据。
+
+### English
+
+1. Download `boot.img` and `rootfs.img.gz`
+2. `gunzip rootfs.img.gz`
+3. Power off, hold **Volume Down** while plugging USB to enter fastboot
+4. Flash:
+
+   ```sh
+   fastboot flash boot boot.img
+   fastboot flash userdata rootfs.img
+   fastboot reboot
+   ```
+5. Root filesystem is expanded automatically on first boot
+6. Login `user` / `147147`; SSH over USB net: `ssh user@172.16.42.1`
+
+> ⚠️ Flashing `userdata` wipes all data on the phone.
 
 ## Status
 
